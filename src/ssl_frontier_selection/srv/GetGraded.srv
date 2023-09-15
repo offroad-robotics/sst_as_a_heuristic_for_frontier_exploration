@@ -1,0 +1,6 @@
+# request
+
+---
+# response
+int32[] ids
+geometry_msgs/Point[] points

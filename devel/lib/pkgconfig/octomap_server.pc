@@ -1,0 +1,8 @@
+prefix=/home/spot/frontier_exploration_ssl_spot/devel
+
+Name: octomap_server
+Description: Description of octomap_server
+Version: 0.6.7
+Cflags: -I/home/spot/frontier_exploration_ssl_spot/devel/include -I/home/spot/frontier_exploration_ssl_spot/src/octomap_server/include -I/usr/local/include
+Libs: -L${prefix}/lib -loctomap_server /usr/local/lib/liboctomap.so /usr/local/lib/liboctomath.so
+Requires: roscpp visualization_msgs sensor_msgs pcl_ros pcl_conversions nav_msgs std_msgs std_srvs octomap_ros octomap_msgs dynamic_reconfigure nodelet

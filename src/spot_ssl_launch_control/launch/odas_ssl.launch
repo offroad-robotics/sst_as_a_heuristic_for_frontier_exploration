@@ -1,0 +1,30 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="configuration_path" default="$(find odas_ros)/config/respeak_4_mic.cfg"/>
+  <arg name="frame_id" default="mic"/>
+  <arg name="use_echo_cancellation" default="false"/>
+  <arg name="echo_cancelled_signal_topic" default="ec_signal"/>
+
+  <arg name="output" default="log"/>
+
+  <!-- ODAS -->
+  <group ns="odas">
+
+    <node unless="$(arg use_echo_cancellation)" pkg="odas_ros" type="odas_server_node.py" name="odas_server_node" output="$(arg output)">
+      <param name="configuration_path" value="$(arg configuration_path)"/>
+      <param name="frame_id" value="$(arg frame_id)"/>
+    </node>
+
+    <node if="$(arg use_echo_cancellation)" pkg="odas_ros" type="odas_echocancel_filter_server_node.py" name="odas_server_node" output="$(arg output)">
+      <param name="configuration_path" value="$(arg configuration_path)"/>
+      <param name="frame_id" value="$(arg frame_id)"/>
+
+      <remap from="ec_signal" to="$(arg echo_cancelled_signal_topic)"/>
+    </node>
+
+    <node pkg="odas_ros" type="odas_visualization_node.py" name="odas_viz_node" output="$(arg output)">
+        <param name="configuration_path" value="$(arg configuration_path)"/>
+    </node>
+
+  </group>
+</launch>

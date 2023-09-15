@@ -1,0 +1,115 @@
+<launch>
+  <arg name="encoding" value="32fc1" />
+  <arg name="limit_range" value="6" />
+  <arg name="median_filter" value="false" />
+  <arg name="mask_size" value="5" />
+  <!-- Convert from uint16 to Canonotical float (mm to m) -->
+  <node pkg="nodelet" type="nodelet" name="standalone_nodelet"  args="manager"/>
+
+  <node pkg="nodelet" type="nodelet" name="REP118_FL" 
+        args="load depth_image_proc/convert_metric standalone_nodelet">
+    <remap from="image_raw" to="/spot/depth/frontleft/image"/>
+    <remap from="image" to="/spot/depth/frontleft/float32"/>
+  </node>
+  <node pkg="nodelet" type="nodelet" name="REP118_FR" 
+        args="load depth_image_proc/convert_metric standalone_nodelet">
+    <remap from="image_raw" to="/spot/depth/frontright/image"/>
+    <remap from="image" to="/spot/depth/frontright/float32"/>
+  </node>
+  <node pkg="nodelet" type="nodelet" name="REP118_L" 
+        args="load depth_image_proc/convert_metric standalone_nodelet">
+    <remap from="image_raw" to="/spot/depth/left/image"/>
+    <remap from="image" to="/spot/depth/left/float32"/>
+  </node>
+  <node pkg="nodelet" type="nodelet" name="REP118_R" 
+        args="load depth_image_proc/convert_metric standalone_nodelet">
+    <remap from="image_raw" to="/spot/depth/right/image"/>
+    <remap from="image" to="/spot/depth/right/float32"/>
+  </node>
+  <node pkg="nodelet" type="nodelet" name="REP118_B" 
+        args="load depth_image_proc/convert_metric standalone_nodelet">
+    <remap from="image_raw" to="/spot/depth/back/image"/>
+    <remap from="image" to="/spot/depth/back/float32"/>
+  </node>
+
+  <!-- Limit each depth image -->
+  <node pkg="ssl_frontier_selection" type="depth_limiter" name="limiter_front_left">
+    <param name="input_topic" value="/spot/depth/frontleft/float32" />
+    <param name="output_topic" value="/spot/depth/frontleft/limited" />
+    <param name="encoding" value="$(arg encoding)" />
+    <param name="max_range" value="$(arg limit_range)" />
+    <param name="median_filter" value="$(arg median_filter)" />
+    <param name="mask_size" value="$(arg mask_size)" />
+  </node>
+  <node pkg="ssl_frontier_selection" type="depth_limiter" name="limiter_front_right">
+    <param name="input_topic" value="/spot/depth/frontright/float32" />
+    <param name="output_topic" value="/spot/depth/frontright/limited" />
+    <param name="encoding" value="$(arg encoding)" />
+    <param name="max_range" value="$(arg limit_range)" />
+    <param name="median_filter" value="$(arg median_filter)" />
+    <param name="mask_size" value="$(arg mask_size)" />
+  </node>
+  <node pkg="ssl_frontier_selection" type="depth_limiter" name="limiter_left">
+    <param name="input_topic" value="/spot/depth/left/float32" />
+    <param name="output_topic" value="/spot/depth/left/limited" />
+    <param name="encoding" value="$(arg encoding)" />
+    <param name="max_range" value="$(arg limit_range)" />
+    <param name="median_filter" value="$(arg median_filter)" />
+    <param name="mask_size" value="$(arg mask_size)" />
+  </node>
+  <node pkg="ssl_frontier_selection" type="depth_limiter" name="limiter_right">
+    <param name="input_topic" value="/spot/depth/right/float32" />
+    <param name="output_topic" value="/spot/depth/right/limited" />
+    <param name="encoding" value="$(arg encoding)" />
+    <param name="max_range" value="$(arg limit_range)" />
+    <param name="median_filter" value="$(arg median_filter)" />
+    <param name="mask_size" value="$(arg mask_size)" />
+  </node>
+  <node pkg="ssl_frontier_selection" type="depth_limiter" name="limiter_back">
+    <param name="input_topic" value="/spot/depth/back/float32" />
+    <param name="output_topic" value="/spot/depth/back/limited" />
+    <param name="encoding" value="$(arg encoding)" />
+    <param name="max_range" value="$(arg limit_range)" />
+    <param name="median_filter" value="$(arg median_filter)" />
+    <param name="mask_size" value="$(arg mask_size)" />
+  </node>
+
+  <!-- Convert to PointCloud -->
+  <node ns="depth_2_cloud" pkg="nodelet" type="nodelet" args="standalone depth_image_proc/point_cloud_xyz" name="frontleft_cloud">
+      <remap from="camera_info"         to="/spot/depth/frontleft/camera_info"/>
+      <remap from="image_rect"       to="/spot/depth/frontleft/limited"/>
+      <remap from="points" to="/spot/depth/cloud/frontleft"/>
+  </node>
+  <node ns="depth_2_cloud" pkg="nodelet" type="nodelet" args="standalone depth_image_proc/point_cloud_xyz" name="frontright_cloud">
+      <remap from="camera_info"         to="/spot/depth/frontright/camera_info"/>
+      <remap from="image_rect"       to="/spot/depth/frontright/limited"/>
+      <remap from="points" to="/spot/depth/cloud/frontright"/>
+  </node>
+  <node ns="depth_2_cloud" pkg="nodelet" type="nodelet" args="standalone depth_image_proc/point_cloud_xyz" name="left_cloud">
+      <remap from="camera_info"         to="/spot/depth/left/camera_info"/>
+      <remap from="image_rect"       to="/spot/depth/left/limited"/>
+      <remap from="points" to="/spot/depth/cloud/left"/>
+  </node>
+  <node ns="depth_2_cloud" pkg="nodelet" type="nodelet" args="standalone depth_image_proc/point_cloud_xyz" name="right_cloud">
+      <remap from="camera_info"         to="/spot/depth/right/camera_info"/>
+      <remap from="image_rect"       to="/spot/depth/right/limited"/>
+      <remap from="points" to="/spot/depth/cloud/right"/>
+  </node>
+  <node ns="depth_2_cloud" pkg="nodelet" type="nodelet" args="standalone depth_image_proc/point_cloud_xyz" name="back_cloud">
+      <remap from="camera_info"         to="/spot/depth/back/camera_info"/>
+      <remap from="image_rect"       to="/spot/depth/back/limited"/>
+      <remap from="points" to="/spot/depth/cloud/back"/>
+  </node>
+
+  <!-- Combine into single point cloud -->
+  <arg name="input_topics" default="[/spot/depth/cloud/frontleft, /spot/depth/cloud/frontright, /spot/depth/cloud/left, /spot/depth/cloud/right, /spot/depth/cloud/back ]" />
+  <arg name="output_topic" default="/spot/depth/cloud/full" />
+  <arg name="output_frame_id" default="base_link" />
+
+  <node pkg="points_preprocessor" type="points_concat_filter"
+        name="points_concat_filter" output="log">
+    <param name="output_frame_id" value="$(arg output_frame_id)" />
+    <param name="input_topics" value="$(arg input_topics)" />
+    <remap from="/points_concat" to="$(arg output_topic)" />
+  </node>
+</launch>

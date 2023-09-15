@@ -1,0 +1,33 @@
+<launch>
+  <!-- REFERENCE FRAMES -->
+  <arg name="imu_frame_id" value="imu" />
+  <arg name="gps_frame_id" value="gps"/>
+  <arg name="mic_frame_id" value="mic"/>
+  <arg name="localized_frame_id" value="odom"/>
+  <arg name="base_frame_id" value="body"/>
+	
+  <!-- Start Octomapping -->
+  <node ns="map" pkg="octomap_server" type="octomap_server_node" name="octomap_server">
+		<param name="resolution" value="0.25" />
+		
+		<!-- fixed map frame -->
+		<param name="frame_id" type="string" value="$(arg localized_frame_id)" />
+
+		<!-- robot frame -->
+		<param name="base_frame_id" type="string" value="$(arg base_frame_id)" />
+		
+		<!-- maximum range to integrate MUST BE LESS THAN DEPTH FILTER -->
+		<param name="sensor_model/max_range" value="3.0" />
+
+		<!-- maximum z height to consider MAX HEIGHT OF ROBOT USED-->
+		<param name="pointcloud_max_z" value="0.90" />
+		<!-- param name="pointcloud_min_z" value="-0.90" -->
+		
+		<!-- data source to integrate (PointCloud2) -->
+		<remap from="cloud_in" to="/spot/depth/cloud/full" />
+	
+	</node>
+  <!-- Start Frontier Crystal Grading -->
+
+  <!-- Start Networkx Map Building -->
+</launch>

@@ -1,0 +1,52 @@
+<launch>
+  <!-- Localization Args -->
+  <arg name="gps" default="false"/>
+
+  <!-- REFERENCE FRAMES -->
+  <arg name="imu_frame_id" value="imu" />
+  <arg name="gps_frame_id" value="gps"/>
+  <arg name="mic_frame_id" value="mic"/>
+
+  <!-- IF GPS THEN LOCALIZED FRAME IS WORLD -->
+  <arg name="localized_frame_id" default="odom" unless="$(arg gps)"/>
+  <arg name="localized_frame_id" value="world" if="$(arg gps)" />
+
+  <arg name="base_frame_id" value="body"/>
+	
+  <!-- LOGGING ARGS -->
+  <arg name="logging" default="log"/>
+
+  <!-- Start 2D Mapping Node -->
+  <node pkg="ssl_frontier_selection" type="occupancy_map_node.py" name="twoD_occupancy_map" output="$(arg logging)" >
+    <param name="world_frame" value="$(arg localized_frame_id)" type="str" />
+	  <param name="base_frame" value="$(arg base_frame_id)" type="str" />
+	  <param name="occupancy_in" value="/spot/local_grid/obstacle_grid" />
+    <param name="occupancy_map" value="/spot/global_grid/occupancy_map" />
+    <param name="frontier_marker_pub" value="/spot/global_grid/frontiers" />
+    <!-- OPTIONS FOR AVG_WINDOW BORDER_PX PRUNE_RADIUS STILL AVAILABLE IN .PY FILE -->
+  </node>
+
+  <!-- Start Frontier Crystal Grading -->
+  <node pkg="ssl_frontier_selection" type="crystal_grading.py" name="frontier_grader" output="$(arg logging)">
+    <param name="crystal_sub" value="/spot/global_grid/frontiers" />
+    <param name="sst_sub" value="/odas/sst" />
+    <param name="sss_sub" value="/odas/sss" />
+    <param name="graded_pub" value="/graded_frontiers" />
+    <param name="grading_srv" value="/spot/global_grid/grade_frontiers"/>
+    <param name="discrete" value="faslse" />
+    <param name="ssc_window" value="5.0" />
+    <param name="ssc_rate" value="2" />
+    <param name="ssc_threshold" value="0.2" />
+    <param name="world_frame" value="$(arg localized_frame_id)" />
+    <param name="sensor_frame" value="$(arg mic_frame_id)" />
+  </node>
+
+  <!-- Start Networkx Map Building -->
+  <node pkg="spot_trajectory_planner" type="trajectory_planner_node" name="traj_planner" output="$(arg logging)">
+    <param name="robot_frame" value="$(arg base_frame_id)" />
+    <param name="world_frame" value="$(arg localized_frame_id)" />
+    <param name="mapless_server" value="/spot/mapless_trajectory"/>
+    <param name="net_viz_topic" value="/spot/mapless_trajectory/netx_viz"/>
+  </node>
+
+</launch>

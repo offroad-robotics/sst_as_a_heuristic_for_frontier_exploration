@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <node name="fbet_node" pkg="fbet" type="fbet_node">
+    <remap from="/cloud_in"       to="/spot/point/front/point_raw"/>
+    <param name="resolution" type="double" value="0.25"/>
+  </node>
+  
+</launch>

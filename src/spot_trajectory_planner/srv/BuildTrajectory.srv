@@ -1,0 +1,9 @@
+# request
+geometry_msgs/PoseStamped frontier_pose
+geometry_msgs/PoseStamped cur_pose
+
+---
+# response
+geometry_msgs/PoseArray frontier_plan
+int32 parent_id # used to identify which node is the parent of the frontier
+int32[] node_list

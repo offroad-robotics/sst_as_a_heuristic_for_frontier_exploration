@@ -1,0 +1,26 @@
+actions_n_services:  
+  # mapping
+  stamp_map: /stamp_grid
+  remove_frontier: /remove_frontier
+  prune_frontiers: /prune_frontiers
+  # selection
+  get_graded: /spot/global_grid/grade_frontiers
+  # start up
+  april_topic: /spot/status/world_objects
+  # node_graph
+  add_save_point: /add_save_point
+  build_trajectory: /build_trajectory_plan
+  execute_trajectory: /execute_trajectory_plan
+  # spot_ros
+  power_on: /spot/power_on
+  power_off: /spot/power_off
+  claim_lease: /spot/claim
+  release_lease: /spot/release
+  e_stop: /spot/estop/gentle
+  stop: /spot/stop
+  sit: /spot/sit
+  stand: /spot/stand
+  stop: /spot/stop
+    
+
+    

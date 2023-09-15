@@ -1,0 +1,35 @@
+# Configuration Settings for 4-M8P device
+
+debug: 0                    # Range 0-4 (0 means no debug statements will print)
+
+device: /dev/ttyACM0
+frame_id: gps
+dynamic_model: pedestrian  
+
+fix_mode: 3d
+
+rate: 10                     # Measurement rate in Hz
+nav_rate: 1                 # in number of measurement cycles
+
+uart1:
+  baudrate: 38400           # C94-M8P specific
+  #in: 0                     # No UART in for base
+  #out: 0                   # RTCM 3
+
+inf: 
+  all: true               # Whether to display all INF messages in console
+
+dgnss_mode: 1 
+
+# Precision Point Positioning
+enable_ppp: false
+
+# what constellation we are connecting too
+gnss:
+  gps: true
+
+# Enable u-blox message publishers
+publish:
+   all: true
+   nav:
+      heading: true

@@ -1,0 +1,8 @@
+prefix=/home/spot/frontier_exploration_ssl_spot/install
+
+Name: spot_driver
+Description: Description of spot_driver
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

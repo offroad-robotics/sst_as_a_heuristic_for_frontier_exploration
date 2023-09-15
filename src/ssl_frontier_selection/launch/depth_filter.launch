@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <!-- Current encoding options are 32fc1 and 16uc1  -->
+  <node pkg="ssl_exploration" type="depth_limiter" name="depth_limiter">
+    <param name="input_topic" value="/spot/depth/front/image_raw" />
+    <param name="output_topic" value="/spot/depth/front/limited" />
+    <param name="encoding" value="32fc1" />
+    <param name="max_range" value="6.0" />
+
+  </node>
+
+</launch>

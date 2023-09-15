@@ -1,0 +1,2 @@
+set(nmea_msgs_MESSAGE_FILES "/home/spot/frontier_exploration_ssl_spot/src/nmea_msgs/msg/Gpgga.msg;/home/spot/frontier_exploration_ssl_spot/src/nmea_msgs/msg/Gpgsa.msg;/home/spot/frontier_exploration_ssl_spot/src/nmea_msgs/msg/Gpgsv.msg;/home/spot/frontier_exploration_ssl_spot/src/nmea_msgs/msg/GpgsvSatellite.msg;/home/spot/frontier_exploration_ssl_spot/src/nmea_msgs/msg/Gprmc.msg;/home/spot/frontier_exploration_ssl_spot/src/nmea_msgs/msg/Gpgst.msg;/home/spot/frontier_exploration_ssl_spot/src/nmea_msgs/msg/Sentence.msg")
+set(nmea_msgs_SERVICE_FILES "")

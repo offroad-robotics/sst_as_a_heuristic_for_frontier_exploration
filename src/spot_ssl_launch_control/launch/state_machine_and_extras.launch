@@ -1,0 +1,35 @@
+<launch>
+  <!-- Localization Args-->
+  <arg name="gps" default="false"/>
+
+  <arg name="imu_frame_id" value="imu" />
+  <arg name="gps_frame_id" value="gps"/>
+  <arg name="mic_frame_id" value="mic"/>
+
+  <!-- IF GPS THEN LOCALIZED FRAME IS WORLD -->
+  <arg name="localized_frame_id" default="odom" unless="$(arg gps)"/>
+  <arg name="localized_frame_id" value="world" if="$(arg gps)" />
+  
+  <arg name="base_frame_id" value="body"/>
+
+  <arg name="trial_id" default="none"/>
+  <arg name="rosbag" default="false"/>
+  <arg name="bag_loc" default="/home/spot/Desktop/ssl_frontier_exploration_bags/"/>
+  
+  <!-- LOGGING ARGS -->
+  <arg name="logging" default="log"/>
+
+  <!-- SMACH State Machine -->
+  <node pkg="spot_ssl_launch_control" type="smach_spot.py" name="state_machine" output="$(arg logging)">
+    <rosparam file="$(find spot_ssl_launch_control)/config/service_action_reference.yaml" command="load" />
+	  <param name="base_frame" type="string" value="$(arg base_frame_id)" />
+    <param name="world_frame" type="string" value="$(arg localized_frame_id)" />
+    <param name="start_april" value="12" />
+    <param name="end_april" value="13" />
+  </node>
+
+  <!-- ROSBAG Automation -->
+  <node if="$(arg rosbag)" pkg="rosbag" type="record" name="auto_rosbag" args="-a -o $(arg bag_loc)$(arg trial_id)_spot_frontier_ssl -x /spot/depth/(.*)">
+  </node>
+
+</launch>

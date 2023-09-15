@@ -1,0 +1,30 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/spot/dev_spot_ws/devel/include/**",
+        "/opt/ros/melodic/include/**",
+        "/home/spot/dev_spot_ws/src/depthai-ros/depthai_bridge/include/**",
+        "/home/spot/dev_spot_ws/src/geometry2/tf2/include/**",
+        "/home/spot/dev_spot_ws/src/geometry2/tf2_bullet/include/**",
+        "/home/spot/dev_spot_ws/src/geometry2/tf2_eigen/include/**",
+        "/home/spot/dev_spot_ws/src/geometry2/tf2_geometry_msgs/include/**",
+        "/home/spot/dev_spot_ws/src/geometry2/tf2_kdl/include/**",
+        "/home/spot/dev_spot_ws/src/geometry2/tf2_msgs/include/**",
+        "/home/spot/dev_spot_ws/src/geometry2/tf2_ros/include/**",
+        "/home/spot/dev_spot_ws/src/geometry2/tf2_sensor_msgs/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

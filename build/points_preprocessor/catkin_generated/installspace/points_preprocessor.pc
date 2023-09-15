@@ -1,0 +1,8 @@
+prefix=/home/spot/frontier_exploration_ssl_spot/install
+
+Name: points_preprocessor
+Description: Description of points_preprocessor
+Version: 1.12.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

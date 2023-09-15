@@ -1,0 +1,9 @@
+<launch>
+
+  <node pkg="spot_trajectory_planner" type="trajectory_planner_node" name="traj_planner" output="screen">
+    <param name="robot_frame" value="body" />
+    <param name="world_frame" value="odom" />
+    <param name="mapless_server" value="/spot/mapless_trajectory"/>
+  </node>
+
+</launch>

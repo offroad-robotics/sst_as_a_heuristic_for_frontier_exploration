@@ -1,0 +1,2 @@
+set(ssl_frontier_selection_MESSAGE_FILES "")
+set(ssl_frontier_selection_SERVICE_FILES "/home/spot/frontier_exploration_ssl_spot/src/ssl_frontier_selection/srv/CheckCollision.srv;/home/spot/frontier_exploration_ssl_spot/src/ssl_frontier_selection/srv/GetGraded.srv;/home/spot/frontier_exploration_ssl_spot/src/ssl_frontier_selection/srv/RemoveFrontier.srv;/home/spot/frontier_exploration_ssl_spot/src/ssl_frontier_selection/srv/StampMap.srv;/home/spot/frontier_exploration_ssl_spot/src/ssl_frontier_selection/srv/PruneFrontiers.srv")

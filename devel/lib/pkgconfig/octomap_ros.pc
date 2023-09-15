@@ -1,0 +1,8 @@
+prefix=/home/spot/frontier_exploration_ssl_spot/devel
+
+Name: octomap_ros
+Description: Description of octomap_ros
+Version: 0.4.1
+Cflags: -I/home/spot/frontier_exploration_ssl_spot/src/octomap_ros/include -I/usr/local/include
+Libs: -L${prefix}/lib -loctomap_ros /usr/local/lib/liboctomap.so /usr/local/lib/liboctomath.so
+Requires: octomap_msgs sensor_msgs tf

@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node name="gpe_filter" pkg="ssl_frontier_selection" type="gpe_filter.py">
+    <param name="input_pc" value="/spot/depth/cloud/full"/>
+    <param name="output_pc" value="/spot/depth/cloud/full_filtered"/>
+    <param name="sensor_range" value="2.0"/>
+    <param name="gpe_frame" value="base_link"/>
+  </node>
+  
+</launch>

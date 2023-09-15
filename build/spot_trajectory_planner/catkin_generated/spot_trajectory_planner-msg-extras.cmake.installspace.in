@@ -1,0 +1,2 @@
+set(spot_trajectory_planner_MESSAGE_FILES "msg/ExecuteTrajectoryAction.msg;msg/ExecuteTrajectoryActionGoal.msg;msg/ExecuteTrajectoryActionResult.msg;msg/ExecuteTrajectoryActionFeedback.msg;msg/ExecuteTrajectoryGoal.msg;msg/ExecuteTrajectoryResult.msg;msg/ExecuteTrajectoryFeedback.msg")
+set(spot_trajectory_planner_SERVICE_FILES "srv/AddSavePoint.srv;srv/BuildTrajectory.srv")

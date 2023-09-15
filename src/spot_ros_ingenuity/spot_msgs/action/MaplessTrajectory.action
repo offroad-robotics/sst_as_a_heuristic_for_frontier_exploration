@@ -1,0 +1,14 @@
+# Action
+geometry_msgs/PoseStamped target_pose
+std_msgs/Duration duration
+bool precise_positioning
+---
+# Result
+bool success
+string message
+int32 attempts
+---
+# Feedback
+geometry_msgs/Pose error
+string feedback
+int32 current_attempt

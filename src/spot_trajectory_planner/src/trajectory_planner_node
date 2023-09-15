@@ -1,0 +1,508 @@
+#!/usr/bin/env python3
+
+import rospy
+import tf2_ros
+import actionlib
+import networkx as nx
+import numpy as np
+import math
+from ssl_frontier_selection.srv import CheckCollisionRequest, CheckCollision
+from spot_msgs.msg import MaplessTrajectoryAction, MaplessTrajectoryGoal, MaplessTrajectoryResult, MaplessTrajectoryFeedback
+from spot_trajectory_planner.srv import BuildTrajectory, AddSavePoint
+from spot_trajectory_planner.msg import ExecuteTrajectoryAction, ExecuteTrajectoryResult, ExecuteTrajectoryFeedback
+from geometry_msgs.msg import Vector3, Point, Pose, PoseStamped, PoseArray, Quaternion
+from std_msgs.msg import Header, ColorRGBA, Duration
+from visualization_msgs.msg import Marker, MarkerArray
+
+class SpotTrajectory:
+
+    def __init__(self, param_dict):
+        # transfer params to class variables
+        self.robot_frame = param_dict["robot_frame"]
+        self.world_frame = param_dict["world_frame"]
+        self.mapless_action_server = param_dict["mapless_server"]
+        self.net_viz_topic = param_dict["net_viz"]
+        self.spot_v = 1.0 # m/s
+
+        self.graph_vis = MarkerArray()
+
+        # transform buffer for looking up position of robot
+        self.tf2_buffer = tf2_ros.Buffer(rospy.Duration(10.0))
+        self.tf2_listener = tf2_ros.TransformListener(self.tf2_buffer)
+
+        # create service for building a trajectory plan and adding a save point
+        self.build_srv = rospy.Service('build_trajectory_plan', BuildTrajectory, self.frontier_planner)
+        self.add_pt_srv = rospy.Service('add_save_point', AddSavePoint, self.add_save_point)
+
+        # create action server for executing a trajectory plan
+        self.execute_act = actionlib.SimpleActionServer("execute_trajectory_plan", ExecuteTrajectoryAction,
+                                                        execute_cb=self.execute_trajectory_action,
+                                                        auto_start=False)
+        self.execute_act.start()
+
+        # connect to occupancy_map_node service to check for approach collisions
+        rospy.wait_for_service('check_occ_collision', timeout=1.0)
+        self.check_occ_collision = rospy.ServiceProxy('check_occ_collision', CheckCollision)
+
+        # viz publishers
+        self.network_pub = rospy.Publisher(self.net_viz_topic, MarkerArray, queue_size=10)
+
+        # create a weighted un-directed graph
+        self.safe_graph = nx.Graph()
+        self.node_ref = 0
+
+        # add current location (boot-up location) as first node
+        # TODO current position might be more accurate coming from the localized odom topic (check later)
+        # TODO network graph will use geometry_msgs/Pose.msg to store node information
+        # TODO lookup_transform returns a geometry_msgs/TransformStamped.msg with a Vector3 and Quaternion
+        start_transform = self.tf2_buffer.lookup_transform(self.world_frame, self.robot_frame, rospy.Time(0), rospy.Duration(1.0))
+        start_pose = tf_stamped_2_pose(start_transform)
+        self.add_node(start_pose)
+
+        # publish map at 1 hz
+        rate = rospy.Rate(1) # 1 Hz
+
+        while not rospy.is_shutdown():
+            self.network_pub.publish(self.graph_vis)
+            rate.sleep()
+
+
+    def frontier_planner(self, req):
+        """
+        Given a frontier goal and the current location, builds a PoseArray for the executer to follow.
+        Also provides the node id of the parent node to the (if succesful when executed) new frontier node.
+        @param req: frontier_pose and cur_pose
+        @return: frontier_plan and parent_id
+        """
+        frontier_plan = PoseArray()
+
+        # find closest node to frontier position (parent id for frontier node)
+        frontier_parent = self.find_closest_node(req.frontier_pose.pose)
+
+        # find closest node to current position
+        # TODO this may be acquired from tf2 if that method is more accurate
+        current_child = self.find_closest_node(req.cur_pose.pose)
+
+        if frontier_parent == None or current_child == None:
+            # chosen frontier or child cannot be reached from any safety nodes
+            return frontier_plan, -1, []
+
+        # get list of node transversal from current to frontier (return list including target and goal)
+        safe_point_path = nx.shortest_path(self.safe_graph, source= current_child, target=frontier_parent, weight='weight')
+
+        # add each pose in the list to the frontier_plan
+        for pose_id in safe_point_path:
+            pose = self.safe_graph.nodes[pose_id]['pose']
+            frontier_plan.poses.append(pose)
+
+        # gets the pose information of the last node in the transversal list to use as the approach node
+        approach_start_node = self.safe_graph.nodes[safe_point_path[-1]]['pose']
+
+        # add the frontier_pose with the calculated approach quaternion
+        frontier_pose = Pose()
+        frontier_pose.position = req.frontier_pose.pose.position
+        frontier_pose.orientation = approach_quaternion(approach_start_node, req.frontier_pose.pose)
+
+        frontier_plan.poses.append(frontier_pose)
+
+        # finish up the PoseArray with its header
+        frontier_plan.header = Header(stamp=rospy.Time.now(), frame_id=self.world_frame)
+
+        # display the plan in rviz
+        self.trajectory_plan_rviz(frontier_plan)
+
+        return frontier_plan, safe_point_path[-1], safe_point_path
+
+    def execute_trajectory_action(self, req):
+        """
+        Compound action that takes a PoseArray and calls the MaplessTrajectory.action. Provides feedback
+        for each network node traversed and can access the networkx node representation.
+
+        999 is an error code
+
+        -1 is the frontier id
+
+        @param req: see ExecuteTrajectory.action
+        @return: '''
+        """
+
+        if(req.add_frontier and not isinstance(req.parent_id, int)):
+            self.execute_act.publish_feedback(
+                ExecuteTrajectoryFeedback(999, "add_frontier was set to True but no parent_id was specified"))
+
+            self.execute_act.set_aborted(
+                ExecuteTrajectoryResult(False))
+            return
+
+        client = actionlib.SimpleActionClient(self.mapless_action_server, MaplessTrajectoryAction)
+
+        connected = client.wait_for_server(timeout = rospy.Duration(2.0))
+
+        if not connected:
+            self.execute_act.publish_feedback(
+                ExecuteTrajectoryFeedback(999, "connection to mapless trajectory server could not be established"))
+
+            self.execute_act.set_aborted(
+                ExecuteTrajectoryResult(False))
+            return
+
+        last_success = req.frontier_plan.poses[0]
+
+        for pose in req.frontier_plan.poses:
+            m_t_action = PoseStamped(pose=pose, header=req.frontier_plan.header)
+            duration_g = Duration(rospy.Duration(self.estimate_travel_duration(pose)))
+            goal = MaplessTrajectoryGoal(target_pose= m_t_action, duration= duration_g, precise_positioning= True)
+
+            client.send_goal(goal, feedback_cb=self.mapless_traj_feedback)
+            client.wait_for_result()
+            result = client.get_result()
+
+            if not result.success:
+                # FAILURE
+
+                rospy.logwarn("Trajectory_planner_node failed while executing plan. Node " + str(req.parent_id))
+
+                self.execute_act.publish_feedback(
+                    ExecuteTrajectoryFeedback(req.parent_id, result.message))
+
+                self.execute_act.set_aborted(
+                    ExecuteTrajectoryResult(False, last_success))
+                return
+
+            else:
+                # SUCCESS CASE
+                # TODO adjust feedback to give current node the vehicle is attempting, use it for viz too
+                last_success = pose
+                self.execute_act.publish_feedback(
+                    ExecuteTrajectoryFeedback(req.parent_id, result.message))
+
+        # succesfully traversed all poses
+        if req.add_frontier:
+            # add frontier as new save_point
+            self.add_node(req.frontier_plan.poses[-1], connection= req.parent_id)
+
+            self.execute_act.publish_feedback(ExecuteTrajectoryFeedback(req.parent_id, "trajectory succesful, node added."))
+
+        self.execute_act.set_succeeded(ExecuteTrajectoryResult(True, last_success))
+        return
+
+    def mapless_traj_feedback(self, feedback):
+        # Feedback passed on so that E-Stop/Preempt can be checked. cur_node int incorrect, place holder used.
+        self.execute_act.publish_feedback(ExecuteTrajectoryFeedback(-1 , feedback.feedback))
+        
+        error = feedback.error
+        attempts = feedback.current_attempt
+        message = feedback.feedback
+        
+        #rospy.loginfo(f"PLANNER: e_px: {error.position.x:.2f}, e_py: {error.position.y:.2f}, e_pz: {error.position.z:.2f}")
+        #rospy.loginfo(f"PLANNER: e_qx: {error.orientation.x:.2f}, e_qy: {error.orientation.y:.2f}, e_qz: {error.orientation.z:.2f}, e_qz: {error.orientation.w:.2f}")
+
+        # , attempts: {attempts}, feedback: {message}")
+
+    def add_save_point(self, req):
+        """
+        Adds a save point to the networkx representation manually.
+
+        WARNING: Assumes position added is safe and clear
+        @param req: see AddSavePoint.srv
+        @return: bool - if the save point was added succesfully (networkx should display in rviz)
+        """
+
+        # check if parent_id exists
+        if not self.safe_graph.has_node(req.parent_id):
+            rospy.logerr('Could not find parent id. Add skipped.')
+            return False
+
+        else:
+            rospy.logwarn('Adding save point to network. Position is assumed safe and clear.')
+            self.add_node(req.target_pose.pose, connection=req.parent_id)
+            return True
+
+
+    def add_node(self, pose, connection=None):
+        self.safe_graph.add_node(self.node_ref, pose= pose)
+
+        if connection != None:
+            self.add_edge(self.node_ref, connection)
+
+        # update rviz representation of networkx
+        self.update_rviz_graph()
+
+        self.node_ref = self.node_ref + 1
+
+    def add_edge(self, child, parent):
+        child_pose = self.safe_graph.nodes[child]['pose']
+        parent_pose = self.safe_graph.nodes[parent]['pose']
+
+        # calculate euclidean distance between child and parent
+        ud = euclidean_from_pose(child_pose, parent_pose)
+
+        # add edge with distance as weight
+        self.safe_graph.add_edge(child, parent, weight= ud)
+
+    def trajectory_plan_rviz(self, pose_array):
+        p_scale = 0.2
+        p_color = ColorRGBA(r= 1.0, g= 0.0, b= 0.0, a= 1.0)
+        
+        plan_v = Marker(header= Header(stamp=rospy.Time.now(), frame_id=self.world_frame))
+
+        plan_v.ns = 'trajectory plan'
+        plan_v.id = 1
+        plan_v.type = Marker().LINE_STRIP
+        plan_v.action = Marker().ADD
+        plan_v.pose = Pose() # all zeroes to allign with frame
+        plan_v.scale = Vector3(p_scale, 0, 0)
+        plan_v.color = p_color
+        plan_v.frame_locked = True
+
+        for pose in pose_array.poses:
+
+            # nodes
+            t_point = Point()
+            t_point.x = pose.position.x
+            t_point.y = pose.position.y
+            t_point.z = pose.position.z
+            # TODO node height may have to be adjusted depending on how Z is being trated at the input source
+            plan_v.points.append(t_point)
+
+        self.graph_vis.markers.append(plan_v)
+
+    def update_rviz_graph(self):
+        """
+        Update and publish MarkerArrays for RVIZ rendering. Nodes represented as SPHERE LIST.
+        Labels as TEXT. Edges as ARROWS
+        @return: None
+        """
+
+        self.graph_vis = MarkerArray()
+        vis_header = Header(stamp=rospy.Time.now(), frame_id=self.world_frame)
+
+        n_scale = 0.2
+        e_scale = 0.1
+        l_scale = 0.1
+
+        n_color = ColorRGBA(r= 0.6, g= 0.6, b= 0.6, a= 0.7)
+        e_color = ColorRGBA(r= 0.937, g= 0.882, b= 0.082, a= 0.7)
+        l_color = ColorRGBA(r= 1.0, g=1.0, b=1.0, a= 1.0)
+
+        # sphere list for nodes
+        nodes_l = list(self.safe_graph.nodes(data= True))
+        nodes_v = Marker(header=vis_header)
+        nodes_v.ns = 'network nodes'
+        nodes_v.type = Marker().SPHERE_LIST
+        nodes_v.action = Marker().ADD
+        nodes_v.pose = Pose() # all zeroes to allign with frame
+        nodes_v.scale = Vector3(n_scale, n_scale, n_scale)
+        nodes_v.frame_locked = True
+
+        for node in nodes_l:
+
+            # nodes
+            n_point = Point()
+            n_data = node[1]["pose"]
+            n_point.x = n_data.position.x
+            n_point.y = n_data.position.y
+            n_point.z = n_data.position.z
+            # TODO node height may have to be adjusted depending on how Z is being trated at the input source
+            nodes_v.points.append(n_point)
+            nodes_v.colors.append(n_color)
+
+            # labels
+            l_name = "Node " + str(node[0])
+            label_v = Marker(header=vis_header)
+            label_v.ns = 'network labels'
+            label_v.id = node[0]
+            label_v.type = Marker().TEXT_VIEW_FACING
+            label_v.action = Marker().ADD
+            label_v.pose = n_data
+            label_v.scale = Vector3(l_scale, l_scale, l_scale)
+            label_v.color = l_color
+            label_v.text = l_name
+            label_v.frame_locked = True
+
+            self.graph_vis.markers.append(label_v)
+
+        self.graph_vis.markers.append(nodes_v)
+
+        # arrows for edges
+        # edge markers done in separate loop to avoid duplicates
+
+        # edge list
+        edge_l = list(self.safe_graph.edges())
+
+        for id, edge in enumerate(edge_l):
+            # get position of start and end of arrow
+            start = self.safe_graph.nodes[edge[0]]["pose"]
+            end = self.safe_graph.nodes[edge[1]]["pose"]
+
+            start_p = Point(x=start.position.x, y=start.position.y, z=start.position.z)
+            end_p = Point(x=end.position.x, y=end.position.y, z=end.position.z)
+
+            edge_id = str(edge[0]) + "-" + str(edge[1])
+
+            neighbor_v = Marker(header=vis_header)
+            neighbor_v.ns = 'network edges'
+            neighbor_v.id =  id
+            neighbor_v.type = Marker().ARROW
+            neighbor_v.action = Marker().ADD
+            neighbor_v.points.append(start_p)
+            neighbor_v.points.append(end_p)
+            neighbor_v.scale = Vector3(e_scale, 0.0, 0.001)
+            neighbor_v.color = e_color
+            neighbor_v.frame_locked = True
+
+            self.graph_vis.markers.append(neighbor_v)
+
+        self.network_pub.publish(self.graph_vis)
+
+    def find_closest_node(self, pose):
+
+        best_dist = float("inf")
+        closest = None
+        # loop over every node
+        for node, data in self.safe_graph.nodes(data=True):
+            # calculate euclidean distance
+            dist = euclidean_from_pose(pose, data['pose'])
+            # keep track of closests
+            # TODO add and raytrace possible bool check
+            if dist < best_dist and self.approach_possible(pose, data['pose']):
+                best_dist = dist
+                closest = node
+
+        return closest
+
+    def approach_possible(self, pose1, pose2):
+        """
+        Given 2 poses, can a raytrace be completed through the current occupancy grid without hitting an obstacle
+        """
+        # build request to occupancy_map_node
+        header = Header(stamp=rospy.Time.now(), frame_id=self.world_frame)
+
+        start = PoseStamped(header=header, pose=pose1)
+        end = PoseStamped(header=header, pose=pose2)
+
+        request = CheckCollisionRequest(start=start, end=end)
+
+        # send request
+        collision = self.check_occ_collision(request)
+
+        # return result
+        return collision.success
+
+    def estimate_travel_duration(self, pose):
+        """
+        Estimates the time required to travel from the current position in the world frame (using tf2)
+        to the given pose position.
+
+        @param pose: geometry_msgs/Pose
+        @return: float - duration in seconds
+        """
+        current_tf = self.tf2_buffer.lookup_transform(self.world_frame, self.robot_frame, rospy.Time(0),
+                                                           rospy.Duration(1.0))
+        current_pose = tf_stamped_2_pose(current_tf)
+
+        distance = euclidean_from_pose(current_pose, pose)
+
+        dur = distance * self.spot_v + 1 # manual 1s buffer
+
+        return dur
+
+def approach_quaternion(start, end):
+    """
+    Given two poses (A and B), find the quaternion that is parallel to the AB vector. Used as the 'safest' approach
+    to a new frontier. All poses are assumed to be in the world frame.
+
+    @param start: geometry_msgs/Pose
+    @param end: geometry_msgs/Pose
+    @return: geometry_msgs/Quaternion
+    """
+
+    # TODO consider using this for every motion between two nodes. In situations where a single node has multiple children.
+
+    start_np = np.array((start.position.x, start.position.y, start.position.z))
+    end_np = np.array((end.position.x, end.position.y, end.position.z))
+    #rospy.logwarn(f"s_x{start.position.x}, s_y{start.position.y}, s_z{start.position.z}")
+    #rospy.logwarn(f"e_x{end.position.x}, e_y{end.position.y}, e_z{end.position.z}")
+
+    np.seterr(all="raise")
+
+    AB_v = end_np - start_np
+
+    # if difference between positions is zero, then return a standard quaternion
+    if np.all(AB_v==0):
+        return Quaternion(x=0, y=0, z=0, w=1.0)
+
+    try: 
+        AB_uv = AB_v / np.linalg.norm(AB_v)
+    except:
+        rospy.logerr("Trajectory Planner: Approach quaternion calculation error.")
+
+    yaw = math.atan2(AB_uv[1], AB_uv[0]) # again, all in world frame
+    roll = pitch = 0 # here in case we move to 3D body positions
+
+    aq = Quaternion() # approach quaternion
+
+    aq.x = np.sin(roll / 2) * np.cos(pitch / 2) * np.cos(yaw / 2) - np.cos(roll / 2) * np.sin(pitch / 2) * np.sin(yaw / 2)
+    aq.y = np.cos(roll / 2) * np.sin(pitch / 2) * np.cos(yaw / 2) + np.sin(roll / 2) * np.cos(pitch / 2) * np.sin(yaw / 2)
+    aq.z = np.cos(roll / 2) * np.cos(pitch / 2) * np.sin(yaw / 2) - np.sin(roll / 2) * np.sin(pitch / 2) * np.cos(yaw / 2)
+    aq.w = np.cos(roll / 2) * np.cos(pitch / 2) * np.cos(yaw / 2) + np.sin(roll / 2) * np.sin(pitch / 2) * np.sin(yaw / 2)
+
+    return aq
+
+def euclidean_from_pose(pose1, pose2):
+    # order agnostic as euclidean is absolute
+
+    pose1_np = np.array((pose1.position.x, pose1.position.y, pose1.position.z))
+    pose2_np = np.array((pose2.position.x, pose2.position.y, pose2.position.z))
+
+    # calculate euclidean distance between pose 1 and pose 2
+    ud = np.linalg.norm(pose1_np - pose2_np)
+
+    return ud
+
+def tf_stamped_2_pose(tf_stamped):
+    """
+    Converts a stamped transform to a pose message, placing the transform components in the position
+    and the rotation in the orientation. Header and timing information is discarded.
+
+    @param tf_stamped: geometry_msgs/TransformStamped.msg
+    @return: geometry_msgs/Pose.msg
+    """
+
+    pose = Pose()
+    pose.position.x = tf_stamped.transform.translation.x
+    pose.position.y = tf_stamped.transform.translation.y
+    pose.position.z = tf_stamped.transform.translation.z
+    pose.orientation.x = tf_stamped.transform.rotation.x
+    pose.orientation.y = tf_stamped.transform.rotation.y
+    pose.orientation.z = tf_stamped.transform.rotation.z
+    pose.orientation.w = tf_stamped.transform.rotation.w
+
+    return pose
+
+def paramDict():
+    param_dict = {}
+
+    # add all param getting/setting here
+    param_dict["robot_frame"] = rospy.get_param("~robot_frame", "body")
+    param_dict["world_frame"] = rospy.get_param("~world_frame", "world")
+    param_dict["mapless_server"] = rospy.get_param("~mapless_server", "mapless_trajectory/goal")
+    param_dict["net_viz"] = rospy.get_param("~net_viz_topic","netx_viz")
+
+    return param_dict
+
+if __name__ == '__main__':
+    rospy.init_node('trajectory_planner')
+    node = SpotTrajectory(paramDict())
+    rospy.spin()
+
+"""
+8888888b.   .d88888b.   .d8888b.                       888b    888          888                                   888      Y88b   d88P 
+888   Y88b d88P" "Y88b d88P  Y88b                      8888b   888          888                                   888       Y88b d88P  
+888    888 888     888 Y88b.                           88888b  888          888                                   888        Y88o88P   
+888   d88P 888     888  "Y888b.         888  888       888Y88b 888  .d88b.  888888 888  888  888  .d88b.  888d888 888  888    Y888P    
+8888888P"  888     888     "Y88b.       `Y8bd8P'       888 Y88b888 d8P  Y8b 888    888  888  888 d88""88b 888P"   888 .88P    d888b    
+888 T88b   888     888       "888         X88K         888  Y88888 88888888 888    888  888  888 888  888 888     888888K    d88888b   
+888  T88b  Y88b. .d88P Y88b  d88P       .d8""8b.       888   Y8888 Y8b.     Y88b.  Y88b 888 d88P Y88..88P 888     888 "88b  d88P Y88b  
+888   T88b  "Y88888P"   "Y8888P"        888  888       888    Y888  "Y8888   "Y888  "Y8888888P"   "Y88P"  888     888  888 d88P   Y88b 
+"""

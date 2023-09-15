@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <node pkg="ssl_frontier_selection" type="crystal_grading.py" name="frontier_grader" output="screen">
+    <param name="crystal_sub" value="/spot/global_grid/frontiers" />
+    <param name="sound_sub" value="/odas/sst" />
+    <param name="graded_pub" value="/graded_frontiers" />
+    <param name="world_frame" value="odom" />
+    <param name="sensor_frame" value="mic" />
+
+  </node>
+
+</launch>

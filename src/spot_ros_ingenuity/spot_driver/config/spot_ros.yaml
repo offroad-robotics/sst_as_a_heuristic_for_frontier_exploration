@@ -1,0 +1,18 @@
+rates:
+  robot_state: 10.0
+  metrics: 0.04
+  lease: 1.0
+  front_image: 10.0
+  side_image: 10.0
+  rear_image: 10.0
+  local_grid: 4.0
+  world_object: 2.0
+mapless_controller:
+  localized_frame: 'odom'
+  spot_frame: 'body'
+  max_attempts: 5
+  success_range: 0.55
+  success_rads: 0.175 # ~ 10 degrees (currently offline)
+auto_claim: False
+auto_power_on: False
+auto_stand: False

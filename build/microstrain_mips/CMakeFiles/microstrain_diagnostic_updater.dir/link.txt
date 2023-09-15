@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -g  -shared -Wl,-soname,libmicrostrain_diagnostic_updater.so -o /home/spot/frontier_exploration_ssl_spot/devel/lib/libmicrostrain_diagnostic_updater.so CMakeFiles/microstrain_diagnostic_updater.dir/src/microstrain_diagnostic_updater.cpp.o 

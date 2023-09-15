@@ -1,0 +1,101 @@
+<launch>
+  <arg name="username" default="" />
+  <arg name="password" default="" />
+  <arg name="hostname" default="" />
+  <arg name="estop_timeout" default="9.0"/>
+  <arg name="odom" default="odom"/>
+
+  <include file="$(find spot_description)/launch/description.launch" />
+  <!-- include file="$(find spot_driver)/launch/control.launch" / -->
+  <include file="$(find spot_driver)/launch/accessories.launch" />
+
+  <node pkg="spot_driver" type="spot_ros" name="spot_ros"  ns="spot" output="screen">
+    <rosparam file="$(find spot_driver)/config/spot_ros.yaml" command="load" />
+    <param name="username" value="$(arg username)" />
+    <param name="password" value="$(arg password)" />
+    <param name="hostname" value="$(arg hostname)" />
+    <param name="mode_parent_odom_tf" value="$(arg odom)" />
+    <param name="estop_timeout" value="$(arg estop_timeout)"/>
+    <remap from="joint_states" to="/joint_states"/>
+    <remap from="tf" to="/tf"/>
+  </node>
+
+  <node pkg="twist_mux" type="twist_mux" name="twist_mux" >
+    <rosparam command="load" file="$(find spot_driver)/config/twist_mux.yaml" />
+    <remap from="cmd_vel_out" to="spot/cmd_vel"/>
+  </node>
+
+  <!-- IMU Setup -->
+  <!-- Declare arguments with default values -->
+  <arg name="port" default="/dev/microstrain_rtk" />
+  <arg name="baudrate" default="115200" />
+  <arg name="imu_rate" default="100" />
+  <arg name="imu_frame_id" default="imu" />
+  
+  <!-- Microstrain sensor node -->
+  <node name="microstrain_imu"
+  pkg="microstrain_mips"
+  type="microstrain_mips_node" output="screen"
+  ns="spot" >
+    <param name="port" value="$(arg port)" type="str" />
+    <param name="baudrate" value="$(arg baudrate)" type="int" />
+
+    <param name="device_setup" value="true" type="bool" />
+    <!-- General Settings -->
+    <param name="readback_settings" value="false" type="bool" />
+    <param name="save_settings" value="true" type="bool" />
+    <param name="auto_init" value="true" type="bool" />
+
+    <!-- This parameter is to set wether the device orientation uses a basic 
+      NED->ENU orientation swap or not. If true, the ENU reported should
+      match the label printed on the device. If false X & Y are swapped
+      and Z is negated. -->
+    <param name="frame_based_enu" value="true" type="bool" />
+
+    <!-- The GX5-25 is AHRS only, so need to turn off the other messages -->
+    <!-- AHRS Settings -->
+    <param name="publish_imu" value="true" type="bool" />
+    <param name="imu_rate" value="$(arg imu_rate)" type="int" />
+    <param name="imu_frame_id" value="$(arg imu_frame_id)" type="str" />
+    <!-- Declination source 1=None, 2=magnetic, 3=manual -->
+    <param name="declination_source" value="2" type="int" />
+    <param name="declination" value="0.23" type="double" />
+    <!-- Filtered IMU rate is based on nav_rate since it is tied in with the onboard Kalman Filter -->
+    <!-- If you set the filtered_imu rate to be something fairly high, make sure to lower the IMU rate
+          above since it appears that the data rate can flood the USB. -->
+    <param name="publish_filtered_imu" value="true" type="bool" />
+    <!-- Remove gravity is only valid with the filtered IMU data. -->
+    <param name="remove_imu_gravity" value="false" type="bool" />
+    <!-- Static IMU message covariance values -->
+    <!-- Since internally these are std::vector we need to use the rosparam tags -->
+    <rosparam param="imu_orientation_cov"> [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01]</rosparam>
+    <rosparam param="imu_linear_cov"> [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01]</rosparam>
+    <rosparam param="imu_angular_cov"> [0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01]</rosparam>
+
+  </node>
+
+
+  
+  <!-- GPS Setup -->
+  <arg name="param_file_name"     default="ublox_neo_m9n" doc="name of param file, e.g. rover" />
+  <arg name="param_file_dir"  default="$(find spot_driver)/sensor_configs" />
+  <arg name="gps_frame_id" value="gps"/>
+
+  <arg name="node_name"           doc="name of this node"
+                                  default="ublox" />
+  <arg name="output"              default="screen" />
+  <arg name="respawn"             default="true" />
+  <arg name="respawn_delay"       default="30" />
+  <arg name="clear_params"        default="true" />
+
+  <node pkg="ublox_gps" type="ublox_gps" name="$(arg node_name)"
+        output="$(arg output)"
+        clear_params="$(arg clear_params)"
+        respawn="$(arg respawn)"
+        respawn_delay="$(arg respawn_delay)">
+    <param name="frame_id" value="$(arg gps_frame_id)" type="str" />
+    <rosparam command="load"
+              file="$(arg param_file_dir)/$(arg param_file_name).yaml" />
+  </node>
+
+</launch>

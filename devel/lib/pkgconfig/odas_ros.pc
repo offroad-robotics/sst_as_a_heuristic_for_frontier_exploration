@@ -1,0 +1,8 @@
+prefix=/home/spot/frontier_exploration_ssl_spot/devel
+
+Name: odas_ros
+Description: Description of odas_ros
+Version: 0.0.0
+Cflags: -I/home/spot/frontier_exploration_ssl_spot/devel/include
+Libs: -L${prefix}/lib 
+Requires: audio_utils roscpp rospy std_msgs message_runtime
