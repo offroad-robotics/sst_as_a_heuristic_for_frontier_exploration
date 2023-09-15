@@ -61,9 +61,9 @@ This research included the development of a custom backpack. The backpack includ
 
 A ruggedized frame was printed using a continuous carbon fiber embedding process to provide impact and crush resistance. Additionally, the microphone mast was designed to be sacrificial, snapping off in a controlled manner in the event of a rollover. Full Fusion360 files are available [here](https://a360.co/3OP8Lgn).
 <div align="center">
-<img src="https://code.engineering.queensu.ca/offroad/frontier_exploration_ssl_spot/-/raw/main/project_images/FullHardware.JPG" width="250"  />
+<img src="https://github.com/offroad-robotics/sst_as_a_heuristic_for_frontier_exploration/blob/main/project_images/FullHardware.JPG" width="250"  />
 <br/><br/> 
-<img src="https://code.engineering.queensu.ca/offroad/frontier_exploration_ssl_spot/-/raw/main/project_images/Spot_Thesis_Rotating_Gif.gif" width="250" />
+<img src="https://github.com/offroad-robotics/sst_as_a_heuristic_for_frontier_exploration/blob/main/project_images/Spot_Thesis_Rotating_Gif.gif" width="250" />
 </div>
 
 ### Sound Source Localization, Tracking, Separation, and Classification
@@ -98,13 +98,13 @@ The state machine consists of Start, Plan, Execute, Recover, Update, and Check s
 shutdown under any unforeseen circumstances. A flow chart is included, with a full outline in the drop down.
 
 <div align="center" width="100%">
-<img align="center" src="https://code.engineering.queensu.ca/offroad/frontier_exploration_ssl_spot/-/raw/main/project_images/SPOT_State_Machine_Vertical.png" height="400">
+<img align="center" src="https://github.com/offroad-robotics/sst_as_a_heuristic_for_frontier_exploration/blob/main/project_images/SPOT_State_Machine_Vertical.png" height="400">
 </div>
 
 <details>
   <summary>Detailed State Machine Breakdown</summary>
 
-  <img align="center" src="https://code.engineering.queensu.ca/offroad/frontier_exploration_ssl_spot/-/raw/main/project_images/Full_State_Machine.jpg" >
+  <img align="center" src="https://github.com/offroad-robotics/sst_as_a_heuristic_for_frontier_exploration/blob/main/project_images/Full_State_Machine.jpg" >
   
 </details>
 
