@@ -19,7 +19,7 @@ The full thesis will be available here when it has been completed :grin:
 A poster submitted to the 2023 NSERC Canadian Robotics Network (NCRN) AGM poster session hosted by Toronto Robotics and AI Laboratory at the University of Toronto.
 
 <div align="center">
-<img align="center" src="https://code.engineering.queensu.ca/offroad/frontier_exploration_ssl_spot/-/raw/main/project_images/NCRN_2023_poster_Francesco_Marrato_ingenuity.jpg" height="350">
+<img align="center" src="https://github.com/offroad-robotics/sst_as_a_heuristic_for_frontier_exploration/blob/main/project_images/NCRN_2023_poster_Francesco_Marrato_ingenuity.jpg" height="350">
 </div>
 
 ### Robotics and AI Symposium - December 2022
