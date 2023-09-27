@@ -13,8 +13,11 @@ Our research focuses on developing a robotic exploration system that uses human 
 The full thesis will be available here when it has been completed :grin:
 
 ### IROS Detroit - October 2023
- :warning: Poster in development. :warning:
 
+<div align="center">
+<img align="center" src="https://github.com/offroad-robotics/sst_as_a_heuristic_for_frontier_exploration/blob/main/project_images/IROS%202023%20Detroit.jpg" height="350">
+</div>
+ 
 ### NCRN Annual General Meeting - June 2023
 A poster submitted to the 2023 NSERC Canadian Robotics Network (NCRN) AGM poster session hosted by Toronto Robotics and AI Laboratory at the University of Toronto.
 
@@ -70,9 +73,9 @@ A ruggedized frame was printed using a continuous carbon fiber embedding process
 
 The system identifies human speech through a four stage process, providing a unit vector in the estimated direction of the human speaker to the rest of the ROS systems.
 
-:bulb: add system diagram
-
-:bulb: add rviz image
+<div align="center" width="100%">
+<img align="center" src="https://github.com/offroad-robotics/sst_as_a_heuristic_for_frontier_exploration/blob/main/project_images/sound_source_selection.jpg" height="400">
+</div>
 
 Using the [ODAS](https://github.com/introlab/odas_ros) software as a base, we extend the sound source tracking ability by first separating each tracked source. We feed each tracked source through a [YAMnet](https://www.tensorflow.org/hub/tutorials/yamnet#:~:text=YAMNet%20is%20a%20deep%20net,Mobilenet_v1%20depthwise%2Dseparable%20convolution%20architecture.&text=Load%20the%20Model%20from%20TensorFlow%20Hub.)  classification model. Each tracked source is given a confidence rating on its likelyhood of containing human speech. 
 
@@ -87,7 +90,9 @@ Spot builds a network graph of safe travel positions as it explores its environm
 ### Frontier Grading
 Frontiers are evaluated based on their similarity in direction compared to the estimated vector of the human speaker. The heuristic for frontier rading is demonstrated below.
 
-:bulb: add heuristic algorithm
+<div align="center" width="100%">
+<img align="center" src="https://github.com/offroad-robotics/sst_as_a_heuristic_for_frontier_exploration/blob/main/project_images/frontier_scoring_heuristic.jpg" height="400">
+</div>
 
 Historically, frontier exploration exploits lowest cost or highest potential for map expansion as the heuristic for search. This research explores the use of a unique heuristic, utilizing a beyond line of sight modality for applications in search and rescue.
 
