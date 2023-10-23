@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+title: >-
+  Sound Source Tracking as A Heuristic for Frontier
+  Exploration in Search and Rescue
+message: >-
+  This repository is a collection of the work performed by
+  Francesco Marrato for his MASc in Electrical and Computer
+  Engineering.
+type: software
+authors:
+  - given-names: Francesco
+    family-names: Marrato
+    email: 15fram@queensu.ca
+    name-particle: Francesco
+    affiliation: Ingenuity Labs - Queens University
+    orcid: 'https://orcid.org/0009-0007-6331-5754'
+url: 'https://offroad.engineering.queensu.ca/'
+abstract: >-
+  This paper describes a system that integrates autonomous
+  exploration agents for disasters scenarios with robots
+  that have the ability to interpret their surroundings
+  through sound. We present the development of an autonomous
+  frontier exploration system that uses sound source
+  tracking of human voices as a heuristic for search. Our
+  system is capable of exploring previously unknown
+  environments and locating a target sound source which
+  emits human speech. We propose continuous and discrete
+  approaches to sound source tracking and establish that
+  measurements taken while the robot is stationary do not
+  translate to measurable performance improvements. Our
+  system was implemented on a Boston Dynamics Spot
+  quadrupedal robot equipped with a four-microphone array.
+  Field trials were conducted in a laboratory environment
+  and in simulated disaster scenarios in both natural forest
+  and urban environments. Across 64 trials, a success rate
+  of 69 % and a success weighted by path length score of
+  0.42 was achieved. This research stands to demonstrate
+  that sound source tracking tuned for the human voice is a
+  suited heuristic to bring autonomous search agents used in
+  disaster scenarios closer in capability to the humans they
+  assist.
