@@ -107,7 +107,7 @@ Historically, frontier exploration exploits lowest cost or highest potential for
 A state machine was implemented using the SMACH library, connecting all the mentioned components.
 The design philosophy was that the state machine would access individual system nodes through ROS actions and services while each node managed its own data.
 The state machine consists of Start, Plan, Execute, Recover, Update, and Check states for nominal use, with an eight Error state reserved to perform a safe 
-shutdown under any unforeseen circumstances. A flow chart is included, with a full outline in the drop down.
+shutdown under any unforeseen circumstances.
 
 <div align="center" width="100%">
 <img align="center" src="https://github.com/offroad-robotics/sst_as_a_heuristic_for_frontier_exploration/blob/main/project_images/thesis_state_machine_.png" height="800">
