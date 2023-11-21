@@ -1,4 +1,4 @@
-# Spot Frontier Exploration using Sound Source Tracking as a Heuristic for Search.
+# Sound Source Tracking as a Heuristic for Frontier Exploration in Search and Rescue using a Quadruped Mobile Robot
 
 ***AKA: Teaching a robot dog how to play marco polo*** :speaking_head:...:robot:...:dog2: 
 
@@ -110,15 +110,8 @@ The state machine consists of Start, Plan, Execute, Recover, Update, and Check s
 shutdown under any unforeseen circumstances. A flow chart is included, with a full outline in the drop down.
 
 <div align="center" width="100%">
-<img align="center" src="https://github.com/offroad-robotics/sst_as_a_heuristic_for_frontier_exploration/blob/main/project_images/SPOT_State_Machine_Vertical.png" height="400">
+<img align="center" src="https://github.com/offroad-robotics/sst_as_a_heuristic_for_frontier_exploration/blob/main/project_images/thesis_state_machine_.png" height="800">
 </div>
-
-<details>
-  <summary>Detailed State Machine Breakdown</summary>
-
-  <img align="center" src="https://github.com/offroad-robotics/sst_as_a_heuristic_for_frontier_exploration/blob/main/project_images/Full_State_Machine.jpg" >
-  
-</details>
 
 ## Status
 Final touches on thesis and preparing for defense.
