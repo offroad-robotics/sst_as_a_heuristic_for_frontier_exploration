@@ -7,7 +7,7 @@
 ## Project Overview
 This repository covers the development of the research performed by [Francesco Marrato](https://offroad.engineering.queensu.ca/people/franc-marrato/) while completing his MASc in Electrical and Computer Engineering at Queen's University. This research was made possible by Queen's University, Ingenuity Labs, and Professor Joshua Marshall (MASc Supervisor).
 
-Our research focuses on developing a robotic exploration system that uses human voice as a heuristic for frontier selection. Our goal is to demonstrate a robust approach to search and rescue in mock disaster scenarios using a sensor modality uncommon in field robotics that is a key aspect of human search parties. We look to prove that auditory guidance is a viable method for forest based search and rescue robots and to highlight how best it could be applied in the future. To consider our system successful, the robot will have to complete a series of search and rescue tasks that increase in difficulty in both lab and natural environments.
+This repo outlines the development of a system that integrates autonomous exploration agents for disasters scenarios with robots that have the ability to interpret their surroundings through sound. We developed an autonomous frontier exploration system that uses sound source tracking of human voices as a novel heuristic for search. Our system is capable of exploring previously unknown environments and locating a target sound source which emits human speech. Our system was implemented on a Boston Dynamics Spot quadrupedal robot equipped with a four-microphone array. Field trials were conducted in a laboratory environment and in simulated disaster scenarios in both natural forest and urban environments. This research stands to demonstrate that sound source tracking tuned for the human voice is a suited heuristic to bring autonomous search agents used in disaster scenarios closer in capability to the humans they assist.
 
 ## Thesis, Posters, and, Publications
 The full thesis will be available here when it has been completed :grin:
@@ -121,7 +121,7 @@ shutdown under any unforeseen circumstances. A flow chart is included, with a fu
 </details>
 
 ## Status
-Thesis writing and preparation for IROS 2023 Detroit.
+Final touches on thesis and preparing for defense.
 ## Contact Info
 If you wish to get in touch with Francesco Marrato.
 
